@@ -1,0 +1,338 @@
+---
+title: "Lab 9"
+output: html_document
+date: "2024-05-04"
+---
+
+Highway dataset
+```{r}
+# Load data
+print(load("S2_2019_STAT1000_Lab_Week9.RData"))
+library(leaps)
+library(knitr)
+library(corrplot)
+```
+(a) You should first of all get a feel for the data by using functions such as head and appropriate plotting functions. A good one to start with is pairs. Is it easy to interpret?
+```{r}
+str(Highway1)
+library(PerformanceAnalytics)
+chart.Correlation(Highway1[, -12])
+# Plot logRate against the other variables
+par(mfrow = c(3,4), mar = c(3,3,1,1), mgp = c(1.2, 0.3, 0), tcl = -0.01) 
+source("PairsWithHist.R")
+pairs(Highway1, lower.panel = panel.pts, upper.panel = panel.cor, diag.panel = panel.hist)
+```
+(b) How many possible linear models could be constructed using these data?
+The design matrix that underpins the model fitting process will have one column for each of he 10 numeric explanatory variables and 4-1 = 3 columns for "hwy" which is factor with 4 levels. Therefore there are 2^(10+(4-1)) = 2^13 = 8192 possbile linear models for this data.#?
+
+(c) The package leaps contains the function regsubsets that you can use to construct models of increasing complexity (more explanatory variables). For a given number of terms in the model, regsubsets provides by default the explanatory variables(s) that minimize residual sums of squares. It can be useful to look at the top-2, and sometimes even top-3.
+```{r}
+AllSubsets2 <- regsubsets(logRate ~ ., nvmax = 10, data = Highway1) # nvmax = 10 means we should consider all possible subsets of predictors up to a maximum of 10 variables.
+AllSubsets2.summary <- summary(AllSubsets2)
+names(AllSubsets2.summary)
+AllSubsets2.summary$cp
+AllSubsets2.summary$outmat
+kable(AllSubsets2.summary$outmat)
+```
+(d) Re-run regsubsets with nbest = 1, and then construct plots of adjusted R2, Cp, and BIC against number of variables. You will need to extract these criteria from the summary object.
+```{r}
+par(mfow = c(1,3))
+par(cex.axis = 1.5)
+par(cex.lab = 1.5)
+
+AllSubsets <- regsubsets(logRate ~., nvmax = 10, nbest = 1, data = Highway1)
+AllSubsets.summary <- summary(AllSubsets)
+(summary(AllSubsets))$bic
+plot(1:10, AllSubsets.summary$adjr2, xlab = "subset size", ylab = "adjusted R-squared", type ="b")
+plot(1:10, AllSubsets.summary$cp, xlab = "subset size", ylab = "Mallows Cp", type = "b")
+plot(1:10, AllSubsets.summary$bic, xlab = "subset size", ylab = "BIC", type = "b")
+```
+
+(e) Which model(s) would you choose to then fit and then carry forward for further evaluation?
+From the result, it's probably best to carry forward models with 4 or 5 variables, choose from the table produced by regsubsets above.
+```{r}
+lm4 <- lm(logRate ~ logLen + logSigs1 + slim + I(hwy == "PA"), data = Highway1) # The reason we use slim because it contains every variables.
+summary(lm4)
+```
+The addition of the 5th variable logADT (daily traffic) has increased the adjusted R2
+ from 0.71 to 0.73 which isn’t enough to be deemed significant by the drop-in-F test with a P-value of 0.11 (equivalent to the T-test in the output above as the partial-F test is only assessing the dropping of a single term).
+
+(Note that in practice, you would usually consider inclusion or otherwise of the variable “hwy” as a whole, not pull off just one of the factor levels.)
+?
+
+
+
+Question 2
+(a) Construct a model containing all the variables and output a summary. You can retain the design matrix by including the argument “x=TRUE” to your call to lm. Compare the design matrix with the model matrix.
+```{r}
+lm.all <- lm(logRate ~., data = Highway1, x = TRUE)
+summary(lm.all)
+```
+Variables which by themselves may be quite significant can be washed out when considered with others. For example, logTrks is quite strongly correlated with the accident rate when considered alone (R=-0.54, P=0.0003) but not in the model in the full model above.
+Sometimes the effects may actually go in the opposite direction to what you would expect as they are counterbalanced by other variables (possibly too many variables in the model). Note, for example, that all 3 levels of “hwy” MA/MC/PA appear to be associated with lower accident rates than the baseline FAI, and yet from the boxplots above we see that when unadjusted for any other variables FAI has the lowest number of rates on average.
+
+(b) What is your final model using backward sequential selection that uses the change in the residual sums of squares as the criterion in the model building process.
+
+Base on the previous summary lm result,we can find the highest p value is 'shld', since we remove this one first.
+```{r}
+round(summary(lm(logRate ~ logLen + logADT + logTrks + logSigs1 + slim + lane + acpt +
+    itg + lwid + hwy, data = Highway1))$coef, 4) #We have to put coef here, rathere R wouldn't display any result, and coefficients are listed under the "Estimate".
+```
+Base on the previous result, itg has the biggest p-value. Then, we remove itg.
+```{r}
+round(summary(lm(logRate ~ logLen + logADT + logTrks + logSigs1 + slim + lane + acpt + lwid + hwy, data = Highway1))$coef, 4)
+```
+Base on the previous result, we shall remove lane
+```{r}
+round(summary(lm(logRate ~ logLen + logADT + logTrks + logSigs1 + slim + acpt + lwid + hwy, data = Highway1))$coef, 4)
+```
+Base on the previous result, we shall remove lwid.
+```{r}
+round(summary(lm(logRate ~ logLen + logADT + logTrks + logSigs1 + slim + acpt + hwy, data = Highway1))$coef, 4)
+```
+Then remove hwyMC. 
+```{r}
+round(summary(lm(logRate ~ logLen + logADT + logTrks + logSigs1 + slim + I(hwy == "MA") + I(hwy == "PA"), data = Highway1))$coef, 4) #where is acpt?
+```
+Then remove logTrks.
+```{r}
+round(summary(lm(logRate ~ logLen + logADT + logSigs1 + slim + I(hwy == "MA") + I(hwy == "PA"), data = Highway1))$coef, 4)
+```
+Then remove I(hwy == "MA")TRUE,
+```{r}
+round(summary(lm(logRate ~ logLen + logADT + logSigs1 + slim + I(hwy == "PA"), data = Highway1))$coef, 4)
+```
+Then remove logADT
+```{r}
+round(summary(lm(logRate ~ logLen + logSigs1 + slim + I(hwy == "PA"), data = Highway1))$coef, 4)
+```
+(c)Now try backward and forward sequential selection by changing the “method” argument in regsubsets to construct potential models for the highway data.
+```{r}
+par(mfrow=c(1,3))
+par(cex.axis = 1.5)
+par(cex.lab = 1.5)
+Backward <- regsubsets(logRate ~ ., nbest = 1, data = Highway1, method = "backward")
+#R will do all removing steps?
+Backward.summary <- summary(Backward)
+nn <- nrow(Backward.summary$outmat)
+plot(1:nn, Backward.summary$adjr2, xlab = "subset size", ylab = "adjusted R-squared", type = "b")
+plot(1:nn, Backward.summary$cp, xlab = "subset size", ylab = "Mallows' Cp", type = "b")
+abline(0,1,col=2)
+plot(1:nn, Backward.summary$bic, xlab = "subset", ylab = "BIC", type = "b")
+```
+Retrieve the results from Q1, using All Subsets for comparison:
+```{r}
+AllSubsets.summary$outmat
+```
+```{r}
+Backward.summary$outmat
+```
+
+
+```{r}
+par(mfrow=c(1,3))
+par(cex.axis = 1.5)
+par(cex.lab = 1.5)
+Forward <- regsubsets(logRate ~., nbest = 1, data = Highway1, method = "forward") #R will do all removing steps?
+Forward.summary <- summary(Forward)
+nn <- nrow(Forward.summary$outmat)
+plot(1:nn, Forward.summary$adjr2, xlab = "subset size", ylab = "adjusted R-squared", type = "b")
+plot(1:nn, Forward.summary$cp, xlab = "subset size", ylab = "Mallows' Cp", type = "b")
+abline(0,1,col=2)
+plot(1:nn, Forward.summary$bic, xlab = "subset", ylab = "BIC", type = "b")
+```
+
+```{r}
+Forward.summary$outmat
+```
+Consideration of the successive models from the backward selection process arrives at the same best set of 4 variables as the All Subsets method. ???
+
+However, for the forward selection method once a variable is in the "best" set it stays in all larger models, and this has compromised the trade-off between balancing the goodness-of-fit and the penalty of adding extra variables to the model. ?? Does this mean forward selection is good for the all of times?
+
+(d)Alternatively, you can try backward and forward sequential selection using step in the base “stats” package, which uses AIC as the criterion for the model building process.
+
+```{r}
+# backward selection
+lm.backward <- step(lm.all, direction = "backward", trace = 0)
+summary(lm.backward)
+```
+```{r}
+# Forward selection
+lm.0 <- lm(logRate ~ 1, data = Highway1)  # 1 means the intercept term
+lm.forward <- step(lm.0, scope = formula(lm.all), direction = "forward", trace = 0)
+summary(lm.forward)
+```
+```{r}
+#backward selection with intermediate output
+step(lm.all, direction = "backward", trace = 1)
+```
+```{r}
+#Forward selection (trace = 1 will display every steps)
+step(lm.0, scope = formula(lm.all), direction = "forward", trace = 1)
+```
+(e)When there is high correlation between explanatory variables the different approaches are likely to yield different “best” models, and you are likely to run into the problem of multi-collinearity (when one of the variables can be predicted fairly well from some combination of the others). This can lead to inflated variances of predicted values and greater chance of having influential observations. The function corrplot (found in the “corrplot” library) is another function that provides useful plots for examining correlation.
+
+```{r}
+corrplot(cor(Highway1[,-12]), method = "ellipse")
+```
+
+Question 3
+
+```{r}
+bridge <- read.table("bridge.txt", header = T)
+attach(bridge)
+
+```
+
+
+(a). Conduct exploratory analysis for this dataset. (Plot)
+```{r}
+pairs(Time ~ DArea + CCost + Dwgs + Length + Spans, data = bridge)
+```
+
+(b). Fit a full model based on the transformation in (a).
+```{r}
+m1 <- lm(log(Time) ~ log(DArea) + log(CCost) + log(Dwgs) + log(Length) + log(Spans), data = bridge, x = T)
+summary(m1)
+```
+(c)Conduct all-subsets method.
+```{r}
+m1 <- lm(log(Time) ~ log(DArea) + log(CCost) + log(Dwgs) + log(Length) + log(Spans))
+logDArea <- log(DArea)
+logCCost <- log(CCost)
+logDwgs <- log(Dwgs)
+logLength <- log(Length)
+logSpans <- log(Spans)
+X <- cbind(logDArea, logCCost, logDwgs, logLength, logSpans)
+head(X)
+```
+(d) Calculate the adjusted R square for the 5 models.
+```{r}
+library(leaps)
+b <- regsubsets(as.matrix(X), log(Time))
+rs <- summary(b)
+rs
+```
+Model 1: logDwgs
+Model 2: logDwgs,logSpans
+Model 3: logDwgs,logSpans, logCCost
+Model 4: logDwgs, logSpans, logCCost, logDArea
+Model 5: logDwgs, logSpans, logCCost, logDArea, logLength
+
+(d) Calculate the adjusted R-square for the 5 models
+```{r}
+plot(1:5, rs$adjr2, xlab = "Subset Size", ylab = "Adjusted R-squared")
+rs$adjr2
+```
+(e) Calculate the Akaike criterions for the 5 models.
+
+Since we have 5 models, we have to list out these 5 models.
+```{r}
+model1 <- lm(log(Time) ~ log(Dwgs))
+model2 <- lm(log(Time) ~ log(Dwgs) + log(Spans))
+model3 <- lm(log(Time) ~ log(Dwgs) + log(Spans) + log(CCost))
+model4 <- lm(log(Time) ~ log(Dwgs) + log(Spans) + log(DArea) + log(CCost))
+model5 <- lm(log(Time) ~ log(Dwgs) + log(Spans)+ log(DArea) + log(Length) + log(CCost)) 
+
+n <- length(model1$residuals)
+npar <- length(model1$coefficients) + 1
+```
+
+
+```{r}
+#model 1
+#Calculate AIC
+extractAIC(model1, k=2)
+#Calculate AICc
+extractAIC(model1, k=2) + 2 * npar * (npar + 1)/(n - npar -1)
+
+#Calculate BIC
+extractAIC(model1, k=log(n))
+```
+
+
+```{r}
+#model 2
+#Calculate AIC
+extractAIC(model2, k=2)
+
+#Calculate AICc
+extractAIC(model2, k=2) + 2 * npar * (npar + 1)/(n - npar -1)
+
+#Calculate BIC
+extractAIC(model2, k = log(n))
+```
+
+```{r}
+#model 3
+#Calculate AIC
+extractAIC(model3, k=2)
+
+#Calculate AICc
+extractAIC(model3, k = 2) + 2 * npar * (npar + 1)/(n - npar - 1) #? Answer is not matched
+
+#Calculate BIC
+extractAIC(model3, k=log(n))
+```
+
+```{r}
+#Model 4
+#Calculate AIC
+extractAIC(model4, k=2)
+
+#calculate AICc
+extractAIC(model4, k=2) + 2 * npar * (npar + 1) / (n - npar -1)
+
+#Calculate BIC
+extractAIC(model4, k=log(n))
+```
+
+```{r}
+#Model 5
+#Calculate AIC
+extractAIC(model5, k=2)
+
+#Calculate AICc
+extractAIC(model5, k=2) + 2 * npar * (npar + 1) / (n - npar -1)
+
+#Calculate BIC
+extractAIC(model5, k=log(n))
+```
+
+(f)Summarise the two models from the subset selection method.
+```{r}
+summary(model2)
+```
+```{r}
+summary(model3)
+```
+Notice that both predictor are judged to be statistically significant in the two-variables, but only one variable is judged to be significant in the three variables model.
+
+(g). Apply backward method, using AIC and BIC respectively.
+```{r}
+backAIC <- step(model1, direction = "backward", data = bridge)
+backwardBIC <- step(model1, direction = "backward", data = bridge, k = log(n))
+```
+
+(h). Apply the forward method using AIC and BIC respectively.
+```{r}
+mint <- lm(log(Time)~1,data=bridge)
+forwardAIC <- step(mint,scope=list(lower=~1, 
+upper=~log(DArea)+log(CCost)+log(Dwgs)+log(Length)+log(Spans)),
+direction="forward", data=bridge)
+```
+
+```{r}
+forwardBIC <- step(mint, scope = list(lower =~1, upper = ~log(DArea) + log(CCost) + log(Dwgs) + log(Length) + log(Spans)), direction = "forward", data = bridge, k = log(n))
+```
+
+Question 4
+
+(a) Do we need to keep the variables I and ({}{}) in the above model?
+```{r}
+Election <- read.table("Election.txt", header = T)
+Election <- cbind(Election, GI = Election$G * Election$I)
+
+
+```
+

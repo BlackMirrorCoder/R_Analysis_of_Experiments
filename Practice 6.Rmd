@@ -1,0 +1,368 @@
+---
+title: "Lab 6"
+output: html_document
+date: "2024-04-26"
+---
+Question 1 The timing of produciton runs
+(a). Open the Excel file production.txt. Construct a scatterplot of production run, Y, and the number of items produced, X. Fit the least squares line to the data using R. Explain the fitted model, by interpreting the slope and intercept.
+```{r}
+production = read.table("production.txt", header = T)
+head(production)
+```
+```{r}
+prod.lm <- lm(RunTime ~ RunSize, data = production)
+plot(RunTime ~ RunSize, data = production, xlab = "Run Size", ylab = "Run Time")
+abline(prod.lm)
+summary(prod.lm)
+```
+The equation of the least squares line of best fit is: y = 149.7477 + 0.26x
+
+The intercept is 149.7, which is where the oine of best fit crosses the run time axis. The inrtercept in the model has the followinf interpetation: for any production run, the average set up time is 149.7 minutes.
+
+The slope of the line is 0.26. Thus, we say that each additional unit to be produced is predicted to add 0.26 minutues to the run time.
+
+The value of R sqaure (Look at Multiple R-Squared) is 0.7302, which implies that 73.02% of the information in Run Time is explained by the least squares regression line, suggesting that the model is a good model.
+```{r}
+
+```
+
+(b). Construct residual diagnostic plots, and assess whether you think that the assumptions for linear regression have been satisfied. You can use the function rstudent (or rstandard) to first standardize the residuals.
+```{r}
+names(prod.lm)
+res = prod.lm$residuals
+std.res = rstandard(prod.lm)
+par(mfrow = c(2,2)) #plot 4 plots to check normality
+hist(res)
+hist(std.res)
+qqnorm(res)
+qqline(res)
+qqnorm(std.res)
+qqline(std.res)
+par(mfrow = c(1,1))
+```
+From the above histograms and QQ-plots, the normality is satisfied.
+
+```{r}
+par(mfrow = c(2,2))
+plot(res, xlab = "Time", ylab = "Residuals")
+plot(std.res, xlab = "Time", ylab = "Standardised Residuals")
+plot(production$RunSize, res, xlab = "Run Size", ylab = "Residuals")
+plot(production$RunSize, std.res, xlab = "Run Size", ylab = "Standardised Residuals")
+```
+The residual analysis is to check about randomness (independence) and constant variance, We plot both residuals and standardisd residuals against time (top left and top right). From these plots we can confirm the residual are random scattered with no pattern whatsover.
+
+The bottom left plot shows the residual against Run Size to check randomness (no pattern) and constant variance, The bottom left plot shows the residuals against Run Size to check randomness (no pattern) and constant variance. The bottom right plot provides the standardised residuals against fitted values to check randomness (no pattern) and constant variance. Both plots confirm randomness and constant variance.
+```{r}
+
+```
+(c) Using the fitted model
+```{r}
+par(mfrow = c(2,2))
+plot(prod.lm)
+```
+The top left plot shows the residuals against fitted value to check randomness (no pattern) and lineaity.
+
+The bottom left provides the standardised residuals against fitted values to check randomness (no pattern) and constant variance. The smotthing curve using standardised residuals is almost flat to confirm randomness constant variance. 
+
+The top right plot is normal qq-plot. Most of the observations lie around the straight line, confirming Normality.
+
+The bottom right plot of standardised residuals against leverage enables one to readily identify any 'bad' leverage points. 
+All the residuals are within (-2,2), therefore no outliers being detected.
+
+```{r}
+
+```
+Question 2 The invoices data
+
+(a) Fit the latest squares line to the data using R. Explain the fitted model, by interpreting the slope and intercept.
+```{r}
+invocies = read.table("invoices.txt", header = T)
+View(invocies)
+
+inv.lm <- lm(Time ~ Invoices, data = invocies, header = T)
+plot(Time ~ Invoices, data= invocies)
+abline(inv.lm, col = 'red')
+summary(inv.lm)
+```
+
+The equation of the least squares line of best fit is
+  y  = 0.6417 + 0.011 * Invocies
+
+The intercept is 0.642, which is not interpretable for no invoices. 
+
+The slope of the line is 0.011. Thus, we say for that for each additional invocie, the average amount of time it takes to precess icnreases by 0.011 hours. 
+
+```{r}
+
+```
+(b). Construct residual diagnostic plots, and assess whether you think that the assumptions for linear regression have been satisfied. You can use the function rstudent (or rstandard) to first standardize the residuals.
+```{r}
+names(inv.lm) # Check the output of the fitted model, residuals
+std.res = rstandard(inv.lm)
+par(mfrow = c(2,2))
+hist(res)
+hist(std.res)
+qqnorm(res)
+qqline(res)
+qqnorm(std.res)
+qqline(std.res)
+```
+The histograms show bimodalities. From the QQ-plots, the normality seems to be satisfied, except 1 point at the top and 1 point at the bottom respectively.
+
+```{r}
+par(mfrow = c(2,2))
+plot(res, xlab = "Time", ylab = "Residuals")
+plot(std.res, xlab = "Time", ylab = "Standardised Residuals")
+abline(h = 0,lty = 2)
+plot(res, invocies$Invocies, xlab = "Invoices", ylab = "Residuals")
+plot(std.res, invocies$Invoices, xlab = "Invoices", ylab = "Standardised Residuals")
+```
+The next residual analysis is to checlk about randomness (independence) and constant variance. We plot both residuals and standardised residuas against time (top left and top right). From these plots we can see a bit of increasing pattern, small residuals within 0-15 and then larger residuals within 15-30.
+
+The bottom left plot shows the residual against invoices to check randomness (no pattern) and constant vartiance. The bottom right plot provides the standardised residuals against fitted values to check randomness (no pattern) and constant variance. Both plots show a bit of pattern between negative and positive invoices.
+
+```{r}
+
+```
+(c). Perform diagnostic checking for the fitted model in (a) using “plot(file.lm).” Interpret the outputs.
+```{r}
+par(mfrow = c(2,2))
+plot(inv.lm)
+rstandard(inv.lm)
+```
+The top left plots shows the residuals against fitted values to check randomness (no pattern) and linearity.
+
+The bottom left provides the standardised residual against fitted values to check randomnes (no pattern) and constant variance. The smoothing curve using standardised residuals is a curve which means that independence and constant variance may not be satisfied.
+
+The top right plot is a normal qq plot. Most of the observagtions lie around the straight line except the two points, confirming Normality.
+
+The bottom right plot of standardised residuals against leverage enables one to readilty identify and 'bad' leverage points.
+
+   - Recall that the rule for simple linear regression for classifying a point as a leverage
+ point is if leverage $h_{ii} > 4/ n.$ As $n=30$, the rule is $h_{ii} > 0.13.$ As leverage $h_{ii}$ in the above
+ bottom right plot has one point with $h_{ii} > 0.13$ , then there is one leverage point.
+ 
+ 
+ - Recall that we calssif points as outliers if their standardised residuals have absolute value gretaer than 2. All the residuals are within (-2,2), therefore no outliers being deteced. The above leverage poin is a 'good' leverage point.
+```{r}
+
+```
+(d) Use the function influence.measures to explore meausres of leverage and Cook's distance
+```{r}
+Inv.infl <- influence.measures(inv.lm)
+Inv.infl
+
+#Calculate hatvalues and cooks.distance
+Leverage.inv <- hatvalues(inv.lm)
+Cooks.Dist.inv <- cooks.distance(inv.lm)
+Inv <- invocies$Invoices
+
+# plotting the influence measures against their x value - Invoices
+n = 30
+plot(Leverage.inv ~ Inv)
+abline(h = 4/n, col = 3)
+
+plot(Cooks.Dist.inv ~ Inv)
+abline(h = 4/(n-2), col = 2)
+```
+Since standardised residuals have absolute value greater than 2. All the residuals are within (-2,2), therefore no outliers being detected. The above leverage point is a good leverage point.
+
+Cook's distance identifies one potential outlier, observation number 30.
+```{r}
+sort(Leverage.inv)
+```
+```{r}
+sort(Cooks.Dist.inv)
+```
+Question 3
+```{r}
+load("Wind.RData")
+```
+(a) Draw a scatterplot of the response CSpd against the predictor RSpd and label it appropriately.
+```{r}
+par(pty = "s") # A graphical parameter that sets the PlotType to 'square'
+plot(CSpd ~ RSpd, data = wm1, xlab = "Wind speed at reference site (m/s)", ylab = "Wind speed at candidate", main = "Wind speeds at reference and candidate sites", xlim = range(c(wm1$CSpd, wm1$RSpd)), ylim = c(range(wm1$CSpd, wm1$RSpd)))
+abline(Wind.lm$coef, col = 'red')
+```
+Fit a simple linear model to these data, and present the appropriate regression summaries. PLot the fitted line onto the plot
+```{r}
+Wind.lm <- lm(CSpd ~ RSpd, data = wm1)
+names(Wind.lm)
+Wind.lm
+summary(Wind.lm)
+```
+```{r}
+par(mfrow = c(2,2))
+plot(Wind.lm)
+```
+Plot 1: Residuals vs Fitted: There is no clear pattern, eventhough large fitted values seem to have smaller residuals. 
+Plot 2: Scale-Location: There is no clear pattern, eventhough large fitted values seem to have smaller residuals.
+Plot 3: QQ plot: While most of the points are on the straight line, some points on the upper part are off the lines. Normality might not be satisfied.
+Plot 4: Residuals vs Leverage: As $n = 1116 (df+2), the cut-off for Cook's distance is $D_i ? 4 / (n-2) = 0.0036. We can see that many of the standardised residuals with the leverage greater than 0.04
+```{r}
+```
+Question 4
+(a)Assuming that a simple linear regression model is appropriate, obtain the least squares fit relating selling price to taxes paid. What is the estimate of σ2?
+```{r}
+house = read.table("housesellingprice.txt", header = T)
+head(house)
+summary(house)
+house.lm <- lm(sales ~ taxes, data = house)
+summary(house.lm)
+```
+βˆ0 hat(intercept) =13.3202
+βˆ1 hat =3.3244
+
+```{r}
+anova(house.lm)
+```
+σˆ2 hat=ResidualMS=8.77
+
+ResidualMS: Mean Square Residuals or Mean Square Error (MSE). It measures of the variance of the residuals in a regression model. The value is often used to assess the goodness of fit of the model.
+
+(b) Find the mean selling price given that the taxes paid are 7.50.
+```{r}
+predict(house.lm, newdata = data.frame(taxes = 7.5), interval = "confidence", level = 0.95)
+```
+The mean selling price = 38.25296 that the taxes paid are X0 = 7.5
+
+(c) Construct a graph of Y versus X. Then add the fitted line, the 95% confidence interval of the mean response, and the 95% prediction interval of the new actual values on the graph.
+```{r}
+with(house, plot(sales ~ taxes, type = "p"))
+with(house, lines(fitted(house.lm) ~ taxes))
+new = data.frame(taxes = seq(3,10,0.1))
+CIs = predict(house.lm, new, interval = "confidence")
+PIs = predict(house.lm, new, interval = "predict")
+matpoints(new$taxes, CIs, lty = c(1,2,2), col = c("black", "red", "red"), type = "l")
+matpoints(new$taxes, PIs, lty = c(1, 2, 2), col = c("black", "blue", "blue"), type = "l")
+```
+(d) Perform diagnostic checking for the fitted model in (a) using “plot(file.lm).” Interpret the outputs.
+```{r}
+par(mfrow = c(2,2))
+plot(house.lm)
+```
+
+The top left plot shows the residuals against fitted values to check randomness(no pattern) and linearity. The smoothing curve shows a resonable linear relationship and no pattern.
+
+The bottom left provides the standardised residuals against fitted values to check randomness(no pattern) and constant variance. The smoothing curve using standardised reisduals is a curve which means that independence and constant variance may not be satisfied.
+
+The top right is normal qq-plot. Most of the observations lie around the straight line except two points, confirming Normality.
+
+The bottom right plot of standardised residuals against leverage enables one to readily identify any 'bad' leverage points
+```{r}
+house.lev <- hatvalues(house.lm)
+house.lev
+```
+
+```{r}
+sort(rstandard(house.lm))
+```
+```{r}
+View(house)
+```
+The rules of the leverage: if leverage $h_{ii} > 4/n, as n is 24, the rule is $h_{ii} > 0.167. As leverage $h_{ii} in the obove shows that one point (observation no.24) with $h_{ii} = 0.17177 >  0.167. Then , there is one leverage point.
+
+Standardised residuals: the absolute value grater than 2. The point no.15 is 2.1809 which is greater than 2. However, observation number 24, the leverage point, with standard residuals less than 2 is a good leverage point.
+```{r}
+```
+Question 5
+A building maintenance company is planning to submit a bid on a contract to clean corporate offices scattered throughout an office complex. The costs incurred by the maintenance company are proportional to the number of cleaning crews needed for this task. Recent data are available for the number of rooms that were cleaned by varying numbers of crews. For a sample of 53 days, records were kept of the number of crews used and the number of rooms that were cleaned by those crews. The data can be found in the file cleaning.txt.
+
+The aim is to develop a regression equation to model the relationship between the number of rooms cleaned and the number of crews.
+
+Complete the following tasks.
+
+(a). Fit the least squares line to the data using R. Explain the fitted model, by interpreting the slope and intercept.
+```{r}
+bid = read.table("cleaning.txt", header = T)
+head(bid)
+bid.lm <- lm(Rooms ~ Crews, data = bid)
+summary(bid.lm)
+plot(Rooms ~ Crews, data = bid, xlab = "Crews", ylab = "Rooms")
+abline(bid.lm, col = 'red')
+```
+beta0: 1.7847
+beta1: 3.7009
+
+Rooms = 1.78 + 3.7Crews
+The intercept 1.78 ≈ 2 which is where the line of best fit crosses the room axis. The intercept in the model has the following interpretation. For Crews = 0, the average amount of cleaned room is 2.
+
+The slope is 3.7 ≈ 4. Thus, we say that for each addtional crew, it is predicted to add 4 rooms are being cleaned. 
+
+(b). Construct residual diagnostic plots, and assess whether you think that the assumptions for linear regression have been satisfied. You can use the function rstudent (or rstandard) to first standardize the residuals.
+```{r}
+res.bid = bid.lm$residuals
+std.res.bid = rstandard(bid.lm)
+par(mfrow = c(2,2))
+hist(res.bid)
+hist(std.res.bid)
+qqnorm(res.bid)
+qqline(res.bid, col = 'red')
+qqnorm(std.res.bid)
+qqline(std.res.bid, col = 'red')
+sort(std.res.bid)
+```
+
+```{r}
+par(mfrow = c(2,2))
+plot(res.bid, xlab = "Time", ylab = "Residuals")
+plot(std.res.bid, xlab = "Time", ylab = "Standard Residuals")
+plot(bid$Crews, res.bid, xlab = "Number of Crews", ylab = "standard residuals")
+plot(bid$Crews, std.res.bid, xlab = "Number of Crews", ylab = "residuals")
+```
+The residual anaysis is to check about randomness (independence) and constant variance. We plot both residuals and standardised residuals against time (top left and top right). From these plots we can confirm the residual are random scattered with no pattern whatsover. However, there seems to show an increasing trend for variances.
+
+The bottom left plot shows the residuals against Number of Crews to check randomness (no pattern) and constant variance. The bottom right plot provides the standard residuals against fitted values to check randomness (no pattern) and constant variance.
+
+It is clear that the variability in the standardised residuals tends to increase with the number of crews. Thus, the assumption that the variance of the errors is constant appears to be violated in this case.
+
+
+(c). Perform diagnostic checking for the fitted model in (a) using “plot(file.lm).” Interpret the outputs.
+```{r}
+par(mfrow = c(2,2))
+plot(bid.lm)
+```
+The top left plot shows the residuals against fitted values to check randomness and linearity. The smotthing curve shows a reasonable linear regression relationship and no pattern. 
+
+The bottom left plots provides the squared root of standardised residuals against fitted values to check randomness (no pattern) and constant vairiance. The smoothing curve using standardised residuals is an increasing trend which means that constant variance may not be satisfied.
+
+The top right plot is a normal qq-plot. Most of the observation lie around the straight line except the two points. Confirming normality.
+
+The bottom right plot of standadised residuals against leverage enables one to readily identify any 'bad' leverage points. point no.5 is a residual.
+
+(d). As the data on each axis are in the form of counts and are measured in the same units, the square root transformation of both the predictor variable and the response variable should be implemented. Apply these transformations and repeat (a).
+```{r}
+bid.sq.lm = lm(sqrt(Rooms) ~ sqrt(Crews), data = bid)
+plot(sqrt(Rooms) ~ sqrt(Crews), data = bid, xlab = "Square Root of Number of Crews", ylab = " Square Root of Number of Rooms")
+abline(bid.sq.lm)
+```
+```{r}
+summary(bid.sq.lm)
+```
+(e). Perform diagnostic checking for the fitted model in (d) using “plot(file.lm).” Interpret the outputs.
+
+```{r}
+par(mfrow = c(2, 2))
+plot(bid.sq.lm)
+sort(rstandard(bid.sq.lm))
+```
+After the transformation, the bottom left-hand plot further demonstrates the benefit of the square root transformation in terms of stabilising the error term. Thus, taking the square root of both the x and the y variables has stabilised the vairiance of the random errors and hence produced a valid model.
+
+(f). Predict the number of rooms that can be cleaned by 4 crews and by 16 crews and its 95% confidence intervals using the models in (a) and (d) respectively.
+```{r}
+conf.pred0 = predict(bid.lm, newdata = data.frame(Crews = c(4,16)), interval = "prediction", level = 0.95)
+conf.pred0
+```
+
+```{r}
+conf.pred0.sq = predict(bid.sq.lm, newdata = data.frame(Crews = c(4, 16)), interval = "prediction",
+    level = 0.95)
+conf.pred0.sq^2
+```
+We can see that prediction interval based on the transformed data is narrower than that based on the untransformed data when the number of crews is 4(27.21) vs (1.58, 31.59) and wider when the number of crews is 16 [(43.33, 81.55) is wider than (45.81, 76.19)]. 
+
+This is expected as the original scale the data have vairnace which icnreases as the x-variable increases which means that realistic prediction which increases as the x -variable increases which means that realistic prediction intervals will
+   get wider as the  x -variable increases.  
+
+  - In summary, ignoring nonconstant variance in the raw data from this example led to 
+  invalid prediction intervals. 

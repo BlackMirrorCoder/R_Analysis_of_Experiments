@@ -1,0 +1,236 @@
+---
+title: "Lab 8"
+output: html_document
+date: "2024-05-03"
+---
+Question 1 ANOVA - Concept
+```{r}
+print(load("STAT1000_Data_Week8.RData"))
+
+```
+
+Question 2
+(a) Fit a multiple regression model relating selling price to all nine regressors. Present the fitted model.
+```{r}
+Property = read.csv("Property.csv", header = T)
+head(Property)
+M2 = lm(y ~ x1 +x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9, data = Property)
+summary(M2)
+```
+The fitted model:
+y hat = 14.92765 + 1.92472 x1 + 7.00053 x2 + 0.14918 x3  + 2.72281 x4 + 2.00668 x5 - 0.41012 x6 - 1.40324 x7 - 0.03715 x8 + 1.55945 x9
+
+(b) Test for significance of regression at the level of 5%. What conclusions can you draw?
+H0: β1=β2=β3=β4=β5=β6=β7=β8=β9=0
+H1: Not H0
+
+Since p-value is 0.000185 < 0.05, we reject null hypothesis
+
+(c) What is the contribution of lot size (x3) and living space (x4) to the model given that all of the other regressors are included?
+We are interested in the test H0:β3=β4=0 vs H1: Not H0
+We apply the R-code
+```{r}
+M2 = lm(y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9, data = Property)
+M3 = lm(y ~ x1 + x2 + x5 + x6 + x7 + x8 + x9, data = Property)
+anova(M2, M3)
+```
+The p-value for this test is 0.7296 which is over 0.05, so the contribution of lot size and living space is not statistically significant at the level 5%. 
+
+This is also indicated there is no contribution of lot size and living space given that all the other regressors are in the model.
+這也表明，考慮到所有其他回歸變數都在模型中，地塊大小 () 和居住空間 () 沒有貢獻。
+
+
+Question 3 Adapted from Sheather (2009) Chapter 5: Menu pricing in a new Italian restaurant in New York City
+
+(a) Recall the fitted model that being produced last week. Use all of the four variables.
+```{r}
+nyc = read.csv("nyc.csv", header = T)
+View(nyc)
+
+nyc1 = nyc [, c(-1, -2, -7)]
+pairs(nyc1)
+library(PerformanceAnalytics)
+chart.Correlation(nyc1)
+
+nyc2 = nyc [, c(-1,-2)]
+nyc2.lm <- lm(Price~., data = nyc2)
+summary(nyc2.lm)
+
+```
+The initial regression model is: 
+Price = – 24.02 + 1.54 Food + 1.91 Decor – 0.003 Service + 2.07 East
+
+At this point we shall leave Service in the model even though its regression coefficient is not statistically significant.
+
+(b) Conduct the ANOVA F Test (6 steps) for the full model with all 4 variables.
+```{r}
+
+ny.lm <- lm(Price ~ ., data = nyc2) #If use Price ~ East, data = nyc, the result will not be displayed fully.
+anova(ny.lm)
+ny.lmm <- lm(Price ~ 1, data = nyc2) #Model with intercept only
+anova(ny.lmm, ny.lm)
+
+```
+6 Steps ANOVA hypothesis testing:
+Step 1: H0: b1 = b2 = b3 = b4; H1: Not H0
+Step 2: F test. 68.758
+Step 3: The sampling distribution is Fp,n−p−1=F4,163,as p=4,n=168.
+Step 4: P-value is 2.2e-16
+Step 5 and 6: Since p value is smaller than 0.05, so we reject null hypothesis, and it means at least one variable has releationship with Price.
+
+(c) Conduct the partial F Test for
+H0:Pricei=β0+β1Foodi+β2Decori+β3Easti
+against
+Ha:Pricei=β0+β1Foodi+β2Decori+β3Easti+β4Servicei
+
+```{r}
+ny1.lm <- lm(Price ~ Food + Decor + East, data = nyc2)
+anova(ny1.lm, ny.lm)
+#ny.lm included all of variables and ny1 inlcuded Price ~ Food + Decor + East. These are matched with hypothesis.
+```
+After that. 6 steps hypothesis testing.
+
+Step 1: H0:Pricei=β0+β1Foodi+β2Decori+β3Easti; Ha:Pricei=β0+β1Foodi+β2Decori+β3Easti+β4Servicei
+
+Step 2: F test: 0
+
+Step 3: The sampling distribution is F 168-4-1 = F1,163
+
+Step 4: P-value is 0.9945
+
+Step 5 an Step 6. Since p value is greater than 0.05, so we do not reject null hypothesis. The service should not add into the model.
+
+(d) Perform diagnostics checking of the model in (a) using residual analysis.
+```{r}
+res = ny.lm$residuals
+std.res = rstandard(ny.lm)
+par(mfrow = c(2,2))
+hist(std.res)
+qqnorm(std.res)
+qqline(std.res)
+plot(std.res, xlab = "Time", ylab = "Standardised Residuals")
+plot(ny.lm$fitted.values, std.res, xlab = "Fitted Value", ylab = "Standardised Residuals")
+```
+Plot of standardised residuals against each of explanatory variables.
+```{r}
+par(mfrow = c(2,2))
+plot(nyc$Food, std.res, xlab = "Food", ylab = "Standard Residuals")
+plot(nyc$East, std.res, xlab = "East", ylab = "Standard Residuals")
+plot(nyc$Decor, std.res, xlab = "Decor", ylab = "Standard Residuals")
+plot(nyc$Service, std.res, xlab = "Service", ylab = "Standard Residuals")
+
+#Don't plot Price, it's not an explanatory 
+```
+
+(e) Identify outliers if any.
+```{r}
+par(mfrow = c(2,2))
+plot(ny.lm)
+```
+Residuals vs Fitted, QQ-Residuals and Scale-location showed the Normality, Independence and constant variance assumptions are satisfied. In QQ plot, there are some large residuals at both and ends (upper and lower)
+
+The only concern is about the plot of Standardised residuals, because there are two leverage points at the right.
+
+```{r}
+Leverage <- hatvalues(ny.lm)
+sort(Leverage, decreasing = T)
+
+Cooks.Dis <- cooks.distance(ny.lm)
+sort(Cooks.Dis, decreasing = T)
+```
+#Use Cut-Off line to identify the outliers.
+```{r}
+p = 4
+n = 168
+par(mfrow = c(1,2))
+par(mgp = c(1.75, 0.75,0))
+par(mar = c(3,3,2,1))
+plot(std.res ~ Leverage)
+abline(v = 2 * (p + 1) /n, lty = 1, col = 3)
+plot(std.res ~ Cooks.Dis)
+abline(v = 2 * (p + 1)/(n - (p + 1)), lty = 1, col = 2)
+```
+Leverage identifies a couple outliters.
+Cook's Distance identified two outliers.
+
+```{r}
+plot(cooks.distance(ny.lm), xlab = "Restaurants", ylab = "Cook's Distance")
+abline( h = 2*(p+1) / (n-(p+1)), lty = 1, col = 2)
+with(nyc, text(cooks.distance(ny.lm), labels = row.names(nyc), pos = 4))
+```
+
+Question 4 - fitting linear models with a single categorical explanatory variable
+
+(a) Produce a boxplot of the changeover times for each of the methods.
+```{r}
+boxplot(split(ChangeoverTimes$Changeover, ChangeoverTimes$Method))
+```
+
+(b) Write out and fit a *linear regression model* (lm) relating changeover time to changeover method. You can use either of the variables Method or New (look at them first). What is the mean for each of the different methods?
+```{r}
+fit <- lm(Changeover ~ Method, data = ChangeoverTimes)
+summary(fit)
+```
+
+For the existing method the mean changeover time is estimated to be 17.86 seconds. After we optimised the model, the new change overtime is 17.8711 - 3.1736 = 14.6975. 
+
+
+(c) From the fitted model calculate a 95% confidence interval for the coefficient relevant to the new method. (You can use confint.) How would you interpret this?
+```{r}
+confint(fit, level = 0.95)
+```
+We are 95% confident that the difference in the 2 means lies between -5.96 and -0.39 second. 
+
+
+(d) Using t.test, and assuming equal variances, conduct a two-sample t
+-test and calculate a 95% confidence interval for the difference between the mean changeover times. What do you note?
+```{r}
+t.test(Changeover ~ Method, data = ChangeoverTimes, var.equal = T)
+```
+P value is as same as with the previous result. 
+
+Question 5
+(a)Test for significance of regression using α=0.05. Find the p-value for this test. What is your conclusion?%
+```{r}
+ufc = read.table("ufc.txt", header = T)
+head(ufc)
+```
+```{r}
+M1 = lm(Dbh ~ Height + Species, data = ufc)
+summary(M1)
+```
+P value is 2.2e-16. F-test is 78.7. The larger the F-statistic, the more likely it is that at least one of the predictors is significantly related to the response variables.
+
+# According to the output, p-value for the F-test is less than alpha = 0.05. The regression is statistically significant.
+
+(b) How many bad leverage points you can identify from the data?
+df of total =n−1=372−1=371;df of residual=361; df of regression=371−361=10
+
+Degrees of Freedom Regression (df regression):
+This refers to the number of parameters (regression coefficients) estimated in the model, excluding the intercept. In other words, it represents the number of predictors or independent variables in the model.
+In the provided output, the df regression is reported as "10". This means that there are 10 predictors (excluding the intercept) in the regression model.
+
+Degrees of Freedom Residual (df residual):
+This refers to the number of observations in the data minus the number of parameters estimated in the model. It represents the degrees of freedom associated with the residuals, which are the differences between the observed values and the values predicted by the model.
+In the provided output, the df residual is reported as "361". This means that there are 361 degrees of freedom associated with the residuals.
+
+Total Degrees of Freedom:
+The total degrees of freedom represent the total number of observations minus one (to account for estimating the intercept). It is the sum of the degrees of freedom regression and the degrees of freedom residual.
+In this case, the total degrees of freedom can be calculated as the sum of the degrees of freedom regression (10) and the degrees of freedom residual (361), which equals 371.
+
+The cut-off point for leverage is 2 x (10 + 1) / 372 = 0.0591
+```{r}
+plot(rstandard(M1) ~ hatvalues(M1), pch = 16, xlim = c(0,1), ylim = c(-3, 3), main = "Standardised Residuals vs Leverage", xlab = "Hat Values", ylab = "Standard Residuals")
+abline(h = c(-2,2), col = c(2,2), lty = 2)
+abline(v = 2 * (10 + 1)/372, col = 2, lty = 2)
+```
+
+Find the exact high leverage points and outliers
+
+```{r}
+p = 10 + 1
+n = 372
+index.highleverage = which(hatvalues(M1) > 2* p/n)
+index.outlier = which(abs(rstandard(M1))>2)
+```
+
